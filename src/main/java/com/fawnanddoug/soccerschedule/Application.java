@@ -1,6 +1,5 @@
 package com.fawnanddoug.soccerschedule;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -10,9 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.util.StringUtils;
 
 import com.fawnanddoug.soccerschedule.domain.Game;
+import com.fawnanddoug.soccerschedule.service.PrinterService;
 import com.fawnanddoug.soccerschedule.service.SoccerScheduleService;
 
 @SpringBootApplication
@@ -23,22 +22,21 @@ public class Application implements CommandLineRunner {
 	@Autowired
 	private SoccerScheduleService scheduleService;
 	
+	@Autowired
+	private PrinterService printerService;
+	
 	@Value("${weeks}")
 	private int weeks;
 	
-	private static final List<String> teams = Arrays.asList(
-			"Bayern Munich", "Barcelona", "Manchester United", "United States", "Germany", "England", 
-			"Argentina", "Brazil", "Spain", "Netherlands", "France", "Belgium", "Italy");
+	@Value("#{'${teams}'.split(',')}") 
+	private List<String> teams;
 
 	@Override
 	public void run(String... args) {
+		logger.warn("Searching " + this.weeks + " weeks for " + this.teams);
 		List<Game> games = this.scheduleService.getSchedule(this.weeks);
 		games = this.scheduleService.filterByTeams(games, teams);
-		for (Game game : games) {
-			String channel = game.getChannel();
-			channel = StringUtils.hasText(channel) ? channel : " ";
-			logger.warn(game.getStartTime().toString("yyyy MMM-dd E hh:mm a") + "| " + game.getLeague() + "| " + game.getAway().getName() + "| "  + game.getHome().getName() + "| " + channel);			
-		}
+		this.printerService.print(games);
 	}
 
 	public static void main(String[] args) throws Exception {
